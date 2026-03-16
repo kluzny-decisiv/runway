@@ -17,6 +17,7 @@ permission:
     "*": "ask"
     "grep *": "allow"
     "rg *": "allow"
+    "ack *": "allow"
     "git *": "allow"
     "ls *": "allow"
     "cat *": "allow"
