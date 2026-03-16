@@ -20,6 +20,9 @@ permission:
     "rg *": "allow"
     "ls *": "allow"
     "cat *": "allow"
+    "head *": "allow"
+    "tail *": "allow"
+    "wc *": "allow"
 color: "#FF69B4"
 ---
 
