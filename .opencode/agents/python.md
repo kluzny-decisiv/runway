@@ -36,6 +36,7 @@ permission:
     "isort*": "allow"
     "flake8*": "allow"
     "pylint*": "allow"
+    "uv run pytest*: allow"
   task:
     "*": "allow"
 color: "#3776AB"
