@@ -16,4 +16,14 @@ for agent in "$REPO_ROOT/.opencode/agents"/*; do
   fi
 done
 
+# Create the global skills directory
+mkdir -pv "$HOME/.config/opencode/skills"
+
+# Create symlinks for each skill folder
+for skill in "$REPO_ROOT/.opencode/skills"/*; do
+  if [ -d "$skill" ]; then
+    ln -si "$skill" "$HOME/.config/opencode/skills/$(basename "$skill")"
+  fi
+done
+
 echo "runway installation complete!"
