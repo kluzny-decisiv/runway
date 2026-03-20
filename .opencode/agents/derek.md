@@ -23,8 +23,11 @@ permission:
     "tail *": "allow"
     "wc *": "allow"
     "find *": "allow"
-    "git diff*": "allow"
+    "git *": "ask"
     "git log*": "allow"
+    "git diff*": "allow"
+    "git show*": "allow"
+    "git status*": "allow"
 color: "#5B92E5"
 ---
 
