@@ -27,6 +27,8 @@ Runway is a centralized repository for managing AI agents, models, commands, and
 Copy agents to your project's `.opencode/agents` directory:
 
 ```bash
+git clone git@github.com:kluzny-decisiv/runway.git
+cd runway
 PROJECT_DIR=/path/to/your/project
 mkdir -pv "$PROJECT_DIR/.opencode/agents"
 cp -iv .opencode/agents/* "$PROJECT_DIR/.opencode/agents/"
