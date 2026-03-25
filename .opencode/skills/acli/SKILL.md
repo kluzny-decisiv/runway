@@ -7,6 +7,16 @@ required_tools:
 
 # Atlassian CLI (acli) Reference
 
+**Announce at start:** "I'm using the jira skill to..."
+
+## Defaults
+
+- Default project: `PD`
+- Default base URL: `https://decisiv.atlassian.net/browse/`
+- Typical ticket format: `PD-####`
+- Typica branch name: `PD-####-ticket-title-slug`
+- Always print the ticket URL (`https://decisiv.atlassian.net/browse/PD-####`) after any ticket specific operation
+
 ## Command Execution Policy
 
 **IMPORTANT: Only `acli jira` commands can be executed without explicit user confirmation.**
