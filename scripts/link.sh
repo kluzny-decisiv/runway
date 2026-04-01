@@ -26,8 +26,20 @@ link_items() {
     fi
     
     if [ "$should_link" = true ]; then
-      echo "  -> $(basename "$item")"
-      ln -si "$item" "$target_dir/$(basename "$item")"
+      local target_path
+      target_path="$target_dir/$(basename "$item")"
+
+      # Check if symlink already exists and points to the correct source
+      if [ -L "$target_path" ]; then
+        local existing_target
+        existing_target="$(readlink "$target_path")"
+        if [ "$existing_target" = "$item" ]; then
+          echo "EXISTS: $item -> $target_path"
+          continue
+        fi
+      fi
+
+      ln -siv "$item" "$target_path"
     fi
   done
 }
@@ -35,20 +47,40 @@ link_items() {
 # Link agents
 link_agents() {
   link_items "$REPO_ROOT/.opencode/agents" "$HOME/.config/opencode/agents" "f" "agents"
+  echo ""
 }
 
 # Link skills
 link_skills() {
   link_items "$REPO_ROOT/.opencode/skills" "$HOME/.config/opencode/skills" "d" "skills"
+  echo ""
 }
 
 # Link commands
 link_commands() {
   link_items "$REPO_ROOT/.opencode/commands" "$HOME/.config/opencode/commands" "f" "commands"
+  echo ""
 }
 
 # Parse command line arguments
-TARGET="${1:-all}"
+TARGET="all"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    agents|skills|commands|all)
+      TARGET="$1"
+      shift
+      ;;
+    *)
+      echo "Error: Unknown argument '$1'"
+      echo "Usage: $0 [agents|skills|commands|all]"
+      exit 1
+      ;;
+  esac
+done
+
+echo "runway clear and preparing for takeoff..."
+echo ""
 
 case "$TARGET" in
   agents)
@@ -65,12 +97,6 @@ case "$TARGET" in
     link_skills
     link_commands
     ;;
-  *)
-    echo "Error: Unknown target '$TARGET'"
-    echo "Usage: $0 [agents|skills|commands|all]"
-    exit 1
-    ;;
 esac
 
-echo ""
 echo "runway installation complete!"
