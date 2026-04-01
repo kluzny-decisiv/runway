@@ -26,4 +26,14 @@ for skill in "$REPO_ROOT/.opencode/skills"/*; do
   fi
 done
 
+# Create the global commands directory
+mkdir -pv "$HOME/.config/opencode/commands"
+
+# Create symlinks for each command file
+for command in "$REPO_ROOT/.opencode/commands"/*; do
+  if [ -f "$command" ]; then
+    ln -si "$command" "$HOME/.config/opencode/commands/$(basename "$command")"
+  fi
+done
+
 echo "runway installation complete!"
