@@ -18,18 +18,28 @@ Runway is a centralized repository for managing AI agents, models, commands, and
 | **security** | Expert security engineer for threat modeling, vulnerability assessment, and secure code review |
 | **tdd** | Test-Driven Development agent using red-green-refactor methodology. Writes integration-style tests and minimal implementation, focusing on behavior over implementation details |
 
+## Skills
+
+| Skill | Description |
+|-------|-------------|
+| **acli** | Reference guide for the Atlassian CLI - a command-line tool for interacting with Jira Cloud and Atlassian organization administration. Covers Jira operations (work items, projects, boards, sprints), user management, and automation workflows |
+
 ## Setup
 
 **Note** the `-i` flag should prompt you before overwriting any existing files.
 
 ### Local Project Installation
 
-Copy agents to your project's `.opencode/agents` directory:
+Copy agents and skills to your project's `.opencode` directory:
 
 ```bash
+git clone git@github.com:kluzny-decisiv/runway.git
+cd runway
 PROJECT_DIR=/path/to/your/project
 mkdir -pv "$PROJECT_DIR/.opencode/agents"
+mkdir -pv "$PROJECT_DIR/.opencode/skills"
 cp -iv .opencode/agents/* "$PROJECT_DIR/.opencode/agents/"
+cp -irv .opencode/skills/* "$PROJECT_DIR/.opencode/skills/"
 ```
 
 ### Global Installation
@@ -38,18 +48,22 @@ Create symlinks in your global OpenCode configuration directory:
 
 ```bash
 mkdir -pv $HOME/.config/opencode/agents
+mkdir -pv $HOME/.config/opencode/skills
 for agent in .opencode/agents/*; do
   ln -si "$(pwd)/$agent" "$HOME/.config/opencode/agents/$(basename $agent)"
 done
+for skill in .opencode/skills/*; do
+  ln -si "$(pwd)/$skill" "$HOME/.config/opencode/skills/$(basename $skill)"
+done
 ```
 
-This makes the agents available to all OpenCode projects on your system.
+This makes the agents and skills available to all OpenCode projects on your system.
 
 Global installation can be perfomed by running `./scripts/link.sh`
 
 ### Updating
 
-To update your globally installed agents with the latest changes:
+To update your globally installed agents and skills with the latest changes:
 
 ```bash
 cd runway
