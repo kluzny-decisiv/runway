@@ -7,9 +7,9 @@ Runway is a centralized repository of AI agents, skills, and commands. It suppor
 | Harness | Agents | Skills | Commands |
 |---------|--------|--------|----------|
 | [OpenCode](https://opencode.ai) | ✅ | ✅ | ✅ |
-| [Claude Code](https://claude.ai/code) | — | ✅ | — |
+| [Claude Code](https://claude.ai/code) | — | ✅ | ✅ |
 
-Skills are provider-agnostic: a shared body lives in `skills/<name>/SKILL.md` and provider-specific frontmatter in `skills/<name>/.<provider>.metadata.yml`. `link.sh` composes the final `SKILL.md` at install time. Agents and commands are currently OpenCode-only.
+Skills are provider-agnostic: a shared body lives in `skills/<name>/SKILL.md` and provider-specific frontmatter in `skills/<name>/.<provider>.metadata.yml`. `link.sh` composes the final `SKILL.md` at install time. Commands follow the same convention: a shared body lives in `commands/<name>/COMMAND.md`; provider-specific forks use `commands/<name>/COMMAND.<provider>.md`. Agents are OpenCode-only.
 
 ## Installation
 
@@ -55,3 +55,9 @@ Skills are available to all supported harnesses.
 | Skill | Providers | Description |
 |-------|-----------|-------------|
 | **acli** | OpenCode, Claude Code | Atlassian CLI reference for Jira Cloud operations: work items, projects, boards, sprints, filters, and admin. Requires an authenticated `acli` binary. Default project: `PD` at `decisiv.atlassian.net`. |
+
+## Commands
+
+| Command | Providers | Description |
+|---------|-----------|-------------|
+| **draftpr** | OpenCode, Claude Code | Drafts a PR summary by parsing the branch name for a Jira ticket ID, fetching ticket context via `acli`, and analyzing commits. Always shows a draft for user review before editing the PR or posting a comment. Never updates Jira tickets. |

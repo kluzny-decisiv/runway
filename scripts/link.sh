@@ -5,6 +5,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# shellcheck source=scripts/lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
 # ---------------------------------------------------------------------------
 # Shared utilities
 # ---------------------------------------------------------------------------
@@ -18,7 +21,8 @@ link_items() {
     [ "$item_type" = "f" ] && [ -f "$item" ] && should_link=true
     [ "$item_type" = "d" ] && [ -d "$item" ] && should_link=true
     if [ "$should_link" = true ]; then
-      local target_path="$target_dir/$(basename "$item")"
+      local target_path
+      target_path="$target_dir/$(basename "$item")"
       if [ -L "$target_path" ] && [ "$(readlink "$target_path")" = "$item" ]; then
         echo "  ✅ already linked: $(basename "$item")"
         continue
@@ -29,27 +33,26 @@ link_items() {
   done
 }
 
-# Compose a SKILL.md: prepend metadata YAML as frontmatter, then emit the body.
-compose_skill() {
-  local body_file="$1" metadata_file="$2"
-  printf -- "---\n"
-  cat "$metadata_file"
-  printf -- "---\n\n"
-  cat "$body_file"
-}
-
-# Symlink all non-SKILL, non-dotfile assets from a skill dir into a target dir.
-link_skill_assets() {
-  local source_dir="$1" target_dir="$2"
+# Symlink non-body, non-dotfile assets from a source dir into a target dir.
+# Skips the shared body (e.g. SKILL.md) and any provider-specific body forks
+# (e.g. SKILL.claude.md, SKILL.opencode.md) — those are composed, not linked.
+link_assets() {
+  local source_dir="$1" target_dir="$2" body_filename="$3"
+  local stem="${body_filename%.*}"
   for item in "$source_dir"/*; do
-    [ "$(basename "$item")" = "SKILL.md" ] && continue
-    local target_path="$target_dir/$(basename "$item")"
+    [ -e "$item" ] || continue
+    local base; base="$(basename "$item")"
+    [[ "$base" == .* ]] && continue
+    [ "$base" = "$body_filename" ] && continue
+    [[ "$base" == "$stem".*.md ]] && continue
+    local target_path
+    target_path="$target_dir/$base"
     if [ -L "$target_path" ] && [ "$(readlink "$target_path")" = "$item" ]; then
-      echo "    ✅ already linked: $(basename "$item")"
+      echo "    ✅ already linked: $base"
       continue
     fi
     ln -siv "$item" "$target_path"
-    echo "    🔗 linked: $(basename "$item")"
+    echo "    🔗 linked: $base"
   done
 }
 
@@ -64,6 +67,41 @@ link_agents() {
   echo ""
 }
 
+# Install a directory-based artifact (skill) for one provider.
+# Usage: install_artifact <source_dir> <target_dir> <body_file> <provider> <name>
+install_artifact() {
+  local source_dir="$1" target_dir="$2" body_file="$3" provider="$4" name="$5"
+  local metadata="$source_dir/.$provider.metadata.yml"
+  [ -f "$metadata" ] || return 0
+
+  local body
+  body="$(resolve_body "$source_dir" "$body_file" "$provider")"
+  [ -L "$target_dir" ] && rm -v "$target_dir"
+  [ -f "$target_dir" ] && rm -v "$target_dir"
+  mkdir -p "$target_dir"
+  compose_artifact "$body" "$metadata" > "$target_dir/$body_file"
+  echo "  🪄 composed ($provider): $name"
+  link_assets "$source_dir" "$target_dir" "$body_file"
+}
+
+# Install a flat-file command for one provider.
+# Usage: install_command <source_dir> <target_file> <provider> <name>
+install_command() {
+  local source_dir="$1" target_file="$2" provider="$3" name="$4"
+  local metadata="$source_dir/.$provider.metadata.yml"
+  [ -f "$metadata" ] || return 0
+
+  local body
+  body="$(resolve_body "$source_dir" "COMMAND.md" "$provider")"
+  if [ ! -f "$body" ]; then
+    echo "❌ Error: no body found for command '$name' ($provider)" >&2
+    return 1
+  fi
+  [ -L "$target_file" ] && rm -v "$target_file"
+  compose_artifact "$body" "$metadata" > "$target_file"
+  echo "  🪄 composed ($provider): $name"
+}
+
 link_skills() {
   echo "🧠 Linking skills..."
   local skills_dir="$REPO_ROOT/skills"
@@ -71,32 +109,32 @@ link_skills() {
     [ -d "$skill_dir" ] || continue
     local skill_name
     skill_name="$(basename "$skill_dir")"
-
-    if [[ ("$PROVIDER" == "all" || "$PROVIDER" == "opencode") && -f "$skill_dir/.opencode.metadata.yml" ]]; then
-      local opencode_target="$HOME/.config/opencode/skills/$skill_name"
-      [ -L "$opencode_target" ] && rm -v "$opencode_target"
-      mkdir -p "$opencode_target"
-      compose_skill "$skill_dir/SKILL.md" "$skill_dir/.opencode.metadata.yml" > "$opencode_target/SKILL.md"
-      echo "  🪄 composed (opencode): $skill_name"
-      link_skill_assets "$skill_dir" "$opencode_target"
+    if [[ "$PROVIDER" == "all" || "$PROVIDER" == "opencode" ]]; then
+      install_artifact "$skill_dir" "$HOME/.config/opencode/skills/$skill_name" \
+        "SKILL.md" "opencode" "$skill_name"
     fi
-
-    if [[ ("$PROVIDER" == "all" || "$PROVIDER" == "claude") && -f "$skill_dir/.claude.metadata.yml" ]]; then
-      local claude_target="$HOME/.claude/skills/$skill_name"
-      [ -L "$claude_target" ] && rm -v "$claude_target"
-      mkdir -p "$claude_target"
-      compose_skill "$skill_dir/SKILL.md" "$skill_dir/.claude.metadata.yml" > "$claude_target/SKILL.md"
-      echo "  🪄 composed (claude): $skill_name"
-      link_skill_assets "$skill_dir" "$claude_target"
+    if [[ "$PROVIDER" == "all" || "$PROVIDER" == "claude" ]]; then
+      install_artifact "$skill_dir" "$HOME/.claude/skills/$skill_name" \
+        "SKILL.md" "claude" "$skill_name"
     fi
   done
   echo ""
 }
 
 link_commands() {
-  [[ "$PROVIDER" == "all" || "$PROVIDER" == "opencode" ]] || return 0
   echo "⚡️ Linking commands..."
-  link_items "$REPO_ROOT/.opencode/commands" "$HOME/.config/opencode/commands" "f"
+  local commands_dir="$REPO_ROOT/commands"
+  [[ "$PROVIDER" == "all" || "$PROVIDER" == "claude" ]]   && mkdir -p "$HOME/.claude/commands"
+  [[ "$PROVIDER" == "all" || "$PROVIDER" == "opencode" ]] && mkdir -p "$HOME/.config/opencode/commands"
+  for cmd_dir in "$commands_dir"/*/; do
+    [ -d "$cmd_dir" ] || continue
+    local cmd_name
+    cmd_name="$(basename "$cmd_dir")"
+    [[ "$PROVIDER" == "all" || "$PROVIDER" == "claude" ]]   && \
+      install_command "$cmd_dir" "$HOME/.claude/commands/$cmd_name.md"              "claude"   "$cmd_name"
+    [[ "$PROVIDER" == "all" || "$PROVIDER" == "opencode" ]] && \
+      install_command "$cmd_dir" "$HOME/.config/opencode/commands/$cmd_name.md"    "opencode" "$cmd_name"
+  done
   echo ""
 }
 

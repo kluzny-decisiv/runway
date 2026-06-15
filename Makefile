@@ -1,13 +1,16 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install
+.PHONY: help install lint
 
 help: ## Show this help
-	@ echo 
+	@ echo
 	@ echo "Available Commands:"
-	@ echo 
+	@ echo
 	@ grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install for all providers (opencode, claude), all commands (agents, skills, commands)
+install: ## Install for all providers (opencode, claude), all types (agents, skills, commands)
 	./scripts/link.sh
+
+lint: ## Shellcheck all scripts
+	shellcheck scripts/*.sh
